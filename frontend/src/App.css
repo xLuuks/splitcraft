@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@900&family=Manrope:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 9 9 11;
+    --foreground: 250 250 250;
+    --card: 24 24 27;
+    --card-foreground: 250 250 250;
+    --popover: 24 24 27;
+    --popover-foreground: 250 250 250;
+    --primary: 124 58 237;
+    --primary-foreground: 250 250 250;
+    --secondary: 39 39 42;
+    --secondary-foreground: 250 250 250;
+    --muted: 39 39 42;
+    --muted-foreground: 161 161 170;
+    --accent: 46 16 101;
+    --accent-foreground: 250 250 250;
+    --destructive: 127 29 29;
+    --destructive-foreground: 250 250 250;
+    --border: 39 39 42;
+    --input: 39 39 42;
+    --ring: 124 58 237;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Manrope', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Chivo', sans-serif;
+  }
+}
+
+.canvas-container {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="10" height="10" fill="%2327272a"/><rect x="10" y="10" width="10" height="10" fill="%2327272a"/><rect x="10" y="0" width="10" height="10" fill="%2318181b"/><rect x="0" y="10" width="10" height="10" fill="%2318181b"/></svg>');
+  background-size: 20px 20px;
+}
+
+.gradient-text {
+  background: linear-gradient(to right, #ffffff, #ddd6fe, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glow {
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgb(39 39 42);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgb(124 58 237);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgb(109 40 217);
+}
+
+/* Force correct colors for specific elements */
+h1, h2, h3, h4, h5, h6 {
+  color: hsl(var(--foreground)) !important;
+}
+
+label, .label {
+  color: hsl(var(--foreground)) !important;
+}
+
+button {
+  color: inherit;
+}
+
+button:disabled {
+  opacity: 0.5;
+}
