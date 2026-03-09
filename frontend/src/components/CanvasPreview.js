@@ -84,7 +84,7 @@ const CanvasPreview = ({ image, imageData, splitMode, splitParams, onCutLinesUpd
   return (
     <div
       ref={containerRef}
-      className="canvas-container w-full h-full flex items-center justify-center p-4"
+      className="canvas-container w-full h-full min-h-[220px] lg:min-h-0 flex items-center justify-center p-4"
       data-testid="canvas-preview"
     >
       {image && (

@@ -76,8 +76,8 @@ function App() {
         {!image ? (
           <ImageUploader onImageLoad={handleImageLoad} />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-8rem)]">
-            <div className="lg:col-span-8 xl:col-span-9 bg-secondary/20 rounded-xl border border-border flex items-center justify-center relative overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[calc(100vh-8rem)]">
+            <div className="lg:col-span-8 xl:col-span-9 min-h-[240px] sm:min-h-[320px] lg:min-h-0 bg-secondary/20 rounded-xl border border-border flex items-center justify-center relative overflow-hidden">
               <CanvasPreview
                 image={image}
                 imageData={imageData}
