@@ -10,6 +10,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { splitImage } from '@/utils/imageSplitter';
 import { toast } from 'sonner';
 
+const SUPPORTED_EXPORT_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
+
 const ControlPanel = ({
   splitMode,
   setSplitMode,
@@ -33,6 +35,18 @@ const ControlPanel = ({
     }));
   };
 
+  const getExportMimeType = () => {
+    if (exportFormat !== 'original') {
+      return `image/${exportFormat}`;
+    }
+
+    return SUPPORTED_EXPORT_TYPES.has(imageData?.type) ? imageData.type : 'image/png';
+  };
+
+  const updateFixedSize = (mode, key, value) => {
+    updateParam(mode, key, Math.max(parseInt(value, 10) || 100, 10));
+  };
+
   const handleSplit = async () => {
     if (!image) return;
 
@@ -42,7 +56,7 @@ const ControlPanel = ({
         image,
         splitMode,
         splitParams[splitMode],
-        exportFormat === 'original' ? imageData.type : `image/${exportFormat}`,
+        getExportMimeType(),
         quality
       );
       onSplitComplete(parts);
@@ -112,8 +126,9 @@ const ControlPanel = ({
               <Input
                 type="number"
                 value={splitParams.vertical.size || 100}
-                onChange={(e) => updateParam('vertical', 'size', parseInt(e.target.value) || 100)}
+                onChange={(e) => updateFixedSize('vertical', 'size', e.target.value)}
                 min={10}
+                step={1}
                 data-testid="vertical-size-input"
               />
             </div>
@@ -153,8 +168,9 @@ const ControlPanel = ({
               <Input
                 type="number"
                 value={splitParams.horizontal.size || 100}
-                onChange={(e) => updateParam('horizontal', 'size', parseInt(e.target.value) || 100)}
+                onChange={(e) => updateFixedSize('horizontal', 'size', e.target.value)}
                 min={10}
+                step={1}
                 data-testid="horizontal-size-input"
               />
             </div>

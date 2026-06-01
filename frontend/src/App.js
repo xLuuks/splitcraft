@@ -7,6 +7,13 @@ import CanvasPreview from '@/components/CanvasPreview';
 import ControlPanel from '@/components/ControlPanel';
 import ResultsGallery from '@/components/ResultsGallery';
 
+const SUPPORTED_EXPORT_TYPES = {
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp'
+};
+
 function App() {
   const [image, setImage] = useState(null);
   const [imageData, setImageData] = useState(null);
@@ -38,15 +45,7 @@ function App() {
   // Helper para obter extensão do formato
   const getFileExtension = () => {
     if (exportFormat === 'original' && imageData?.type) {
-      const mimeToExt = {
-        'image/jpeg': 'jpg',
-        'image/jpg': 'jpg',
-        'image/png': 'png',
-        'image/webp': 'webp',
-        'image/gif': 'gif',
-        'image/bmp': 'bmp'
-      };
-      return mimeToExt[imageData.type] || 'png';
+      return SUPPORTED_EXPORT_TYPES[imageData.type] || 'png';
     }
     return exportFormat === 'jpeg' ? 'jpg' : exportFormat;
   };
@@ -117,7 +116,15 @@ function App() {
       </main>
 
       <footer className="container mx-auto px-6 pb-6 pt-2 text-center text-xs text-muted-foreground">
-        Desenvolvido por Lucas Alves
+        Desenvolvido por{' '}
+        <a
+          href="https://www.instagram.com/lucaas_a/"
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary hover:underline"
+        >
+          Lucas Alves
+        </a>
       </footer>
       
       <Toaster position="bottom-right" theme="dark" />
