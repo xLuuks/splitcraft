@@ -1,23 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@900&family=Manrope:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@900&family=Manrope:wght@400;700&display=swap');
 
 body {
   font-family: 'Manrope', sans-serif;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Chivo', sans-serif;
 }
 
 .canvas-container {
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="10" height="10" fill="%2327272a"/><rect x="10" y="10" width="10" height="10" fill="%2327272a"/><rect x="10" y="0" width="10" height="10" fill="%2318181b"/><rect x="0" y="10" width="10" height="10" fill="%2318181b"/></svg>');
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="10" height="10" fill="%23222222"/><rect x="10" y="10" width="10" height="10" fill="%23222222"/><rect x="10" y="0" width="10" height="10" fill="%23141414"/><rect x="0" y="10" width="10" height="10" fill="%23141414"/></svg>');
   background-size: 20px 20px;
 }
 
-.gradient-text {
-  background: linear-gradient(to right, #ffffff, #ddd6fe, #7c3aed);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .results-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  }
 }
 
 .glow {
@@ -29,32 +39,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgb(39 39 42);
+  background: hsl(var(--secondary));
   border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgb(124 58 237);
+  background: hsl(var(--primary));
   border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgb(109 40 217);
-}
-
-/* Force correct colors for specific elements */
-h1, h2, h3, h4, h5, h6 {
-  color: hsl(var(--foreground)) !important;
-}
-
-label, .label {
-  color: hsl(var(--foreground)) !important;
-}
-
-button {
-  color: inherit;
-}
-
-button:disabled {
-  opacity: 0.5;
+  background: hsl(var(--gold));
 }

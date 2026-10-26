@@ -6,19 +6,26 @@ export const downloadFile = (blob, filename) => {
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  try {
+    link.click();
+  } finally {
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
 };
 
-export const downloadAllAsZip = async (parts, format) => {
+export const createPartsZip = async (parts) => {
   const zip = new JSZip();
-  
+
   parts.forEach((part, index) => {
-    const filename = `splitcraft-part-${String(index + 1).padStart(3, '0')}.${format}`;
+    const filename = `splitcraft-part-${String(index + 1).padStart(3, '0')}.${part.extension}`;
     zip.file(filename, part.blob);
   });
 
-  const content = await zip.generateAsync({ type: 'blob' });
+  return zip.generateAsync({ type: 'blob' });
+};
+
+export const downloadAllAsZip = async (parts) => {
+  const content = await createPartsZip(parts);
   downloadFile(content, `splitcraft-${Date.now()}.zip`);
 };

@@ -1,16 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Grid3x3, Columns3, Scissors } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { splitImage } from '@/utils/imageSplitter';
+import { calculateSplitLayout, splitImage } from '@/utils/imageSplitter';
+import { getExportMimeType } from '@/utils/imageFormats';
 import { toast } from 'sonner';
-
-const SUPPORTED_EXPORT_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
 
 const ControlPanel = ({
   splitMode,
@@ -23,24 +28,30 @@ const ControlPanel = ({
   setQuality,
   image,
   imageData,
-  cutLines,
-  onSplitComplete
+  onSplitComplete,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const operationRef = useRef(null);
+  useEffect(() => () => operationRef.current?.abort(), [image]);
+
+  let cutLines = [];
+  let validationError = '';
+  try {
+    cutLines = calculateSplitLayout(
+      image.width,
+      image.height,
+      splitMode,
+      splitParams[splitMode]
+    ).lines;
+  } catch (error) {
+    validationError = error.message;
+  }
 
   const updateParam = (mode, key, value) => {
-    setSplitParams(prev => ({
+    setSplitParams((prev) => ({
       ...prev,
-      [mode]: { ...prev[mode], [key]: value }
+      [mode]: { ...prev[mode], [key]: value },
     }));
-  };
-
-  const getExportMimeType = () => {
-    if (exportFormat !== 'original') {
-      return `image/${exportFormat}`;
-    }
-
-    return SUPPORTED_EXPORT_TYPES.has(imageData?.type) ? imageData.type : 'image/png';
   };
 
   const updateFixedSize = (mode, key, value) => {
@@ -48,7 +59,10 @@ const ControlPanel = ({
   };
 
   const handleSplit = async () => {
-    if (!image) return;
+    if (!image || validationError || operationRef.current) return;
+
+    const controller = new AbortController();
+    operationRef.current = controller;
 
     setIsProcessing(true);
     try {
@@ -56,15 +70,24 @@ const ControlPanel = ({
         image,
         splitMode,
         splitParams[splitMode],
-        getExportMimeType(),
-        quality
+        getExportMimeType(exportFormat, imageData?.type),
+        quality,
+        { signal: controller.signal }
       );
+      if (controller.signal.aborted) {
+        parts.forEach((part) => URL.revokeObjectURL(part.url));
+        return;
+      }
       onSplitComplete(parts);
       toast.success(`Imagem dividida em ${parts.length} partes!`);
     } catch (error) {
-      toast.error('Erro ao dividir imagem: ' + error.message);
+      if (!controller.signal.aborted)
+        toast.error('Erro ao dividir imagem: ' + error.message);
     } finally {
-      setIsProcessing(false);
+      if (!controller.signal.aborted) {
+        operationRef.current = null;
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -79,15 +102,30 @@ const ControlPanel = ({
 
       <Tabs value={splitMode} onValueChange={setSplitMode} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="vertical" data-testid="tab-vertical" className="gap-2">
+          <TabsTrigger
+            value="vertical"
+            aria-label="Vertical"
+            data-testid="tab-vertical"
+            className="gap-2"
+          >
             <Columns3 className="w-4 h-4 sm:hidden" />
             <span className="hidden sm:inline">Vertical</span>
           </TabsTrigger>
-          <TabsTrigger value="horizontal" data-testid="tab-horizontal" className="gap-2">
+          <TabsTrigger
+            value="horizontal"
+            aria-label="Horizontal"
+            data-testid="tab-horizontal"
+            className="gap-2"
+          >
             <Columns3 className="w-4 h-4 rotate-90 sm:hidden" />
             <span className="hidden sm:inline">Horizontal</span>
           </TabsTrigger>
-          <TabsTrigger value="grid" data-testid="tab-grid" className="gap-2">
+          <TabsTrigger
+            value="grid"
+            aria-label="Grade"
+            data-testid="tab-grid"
+            className="gap-2"
+          >
             <Grid3x3 className="w-4 h-4 sm:hidden" />
             <span className="hidden sm:inline">Grade</span>
           </TabsTrigger>
@@ -95,6 +133,7 @@ const ControlPanel = ({
 
         <TabsContent value="vertical" className="space-y-4 mt-4">
           <RadioGroup
+            aria-label="Modo de corte vertical"
             value={splitParams.vertical.mode}
             onValueChange={(val) => updateParam('vertical', 'mode', val)}
           >
@@ -110,8 +149,11 @@ const ControlPanel = ({
 
           {splitParams.vertical.mode === 'count' ? (
             <div className="space-y-2">
-              <Label>Quantidade de partes: {splitParams.vertical.count}</Label>
+              <Label id="vertical-count-label">
+                Quantidade de partes: {splitParams.vertical.count}
+              </Label>
               <Slider
+                aria-labelledby="vertical-count-label"
                 value={[splitParams.vertical.count]}
                 onValueChange={([val]) => updateParam('vertical', 'count', val)}
                 min={2}
@@ -122,11 +164,17 @@ const ControlPanel = ({
             </div>
           ) : (
             <div className="space-y-2">
-              <Label>Largura de cada parte (px)</Label>
+              <Label htmlFor="vertical-size">Largura de cada parte (px)</Label>
               <Input
+                id="vertical-size"
                 type="number"
-                value={splitParams.vertical.size || 100}
-                onChange={(e) => updateFixedSize('vertical', 'size', e.target.value)}
+                value={splitParams.vertical.size ?? 100}
+                onChange={(e) =>
+                  updateParam('vertical', 'size', e.target.value)
+                }
+                onBlur={(e) =>
+                  updateFixedSize('vertical', 'size', e.target.value)
+                }
                 min={10}
                 step={1}
                 data-testid="vertical-size-input"
@@ -137,6 +185,7 @@ const ControlPanel = ({
 
         <TabsContent value="horizontal" className="space-y-4 mt-4">
           <RadioGroup
+            aria-label="Modo de corte horizontal"
             value={splitParams.horizontal.mode}
             onValueChange={(val) => updateParam('horizontal', 'mode', val)}
           >
@@ -152,10 +201,15 @@ const ControlPanel = ({
 
           {splitParams.horizontal.mode === 'count' ? (
             <div className="space-y-2">
-              <Label>Quantidade de partes: {splitParams.horizontal.count}</Label>
+              <Label id="horizontal-count-label">
+                Quantidade de partes: {splitParams.horizontal.count}
+              </Label>
               <Slider
+                aria-labelledby="horizontal-count-label"
                 value={[splitParams.horizontal.count]}
-                onValueChange={([val]) => updateParam('horizontal', 'count', val)}
+                onValueChange={([val]) =>
+                  updateParam('horizontal', 'count', val)
+                }
                 min={2}
                 max={20}
                 step={1}
@@ -164,11 +218,17 @@ const ControlPanel = ({
             </div>
           ) : (
             <div className="space-y-2">
-              <Label>Altura de cada parte (px)</Label>
+              <Label htmlFor="horizontal-size">Altura de cada parte (px)</Label>
               <Input
+                id="horizontal-size"
                 type="number"
-                value={splitParams.horizontal.size || 100}
-                onChange={(e) => updateFixedSize('horizontal', 'size', e.target.value)}
+                value={splitParams.horizontal.size ?? 100}
+                onChange={(e) =>
+                  updateParam('horizontal', 'size', e.target.value)
+                }
+                onBlur={(e) =>
+                  updateFixedSize('horizontal', 'size', e.target.value)
+                }
                 min={10}
                 step={1}
                 data-testid="horizontal-size-input"
@@ -179,8 +239,9 @@ const ControlPanel = ({
 
         <TabsContent value="grid" className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label>Linhas: {splitParams.grid.rows}</Label>
+            <Label id="grid-rows-label">Linhas: {splitParams.grid.rows}</Label>
             <Slider
+              aria-labelledby="grid-rows-label"
               value={[splitParams.grid.rows]}
               onValueChange={([val]) => updateParam('grid', 'rows', val)}
               min={2}
@@ -190,8 +251,9 @@ const ControlPanel = ({
             />
           </div>
           <div className="space-y-2">
-            <Label>Colunas: {splitParams.grid.cols}</Label>
+            <Label id="grid-cols-label">Colunas: {splitParams.grid.cols}</Label>
             <Slider
+              aria-labelledby="grid-cols-label"
               value={[splitParams.grid.cols]}
               onValueChange={([val]) => updateParam('grid', 'cols', val)}
               min={2}
@@ -205,11 +267,13 @@ const ControlPanel = ({
 
       <div className="border-t border-border pt-6 space-y-4">
         <h3 className="font-bold text-foreground">Exportação</h3>
-        
+
         <div className="space-y-2">
-          <Label className="text-foreground">Formato</Label>
+          <Label htmlFor="export-format" className="text-foreground">
+            Formato
+          </Label>
           <Select value={exportFormat} onValueChange={setExportFormat}>
-            <SelectTrigger data-testid="format-select">
+            <SelectTrigger id="export-format" data-testid="format-select">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -223,8 +287,11 @@ const ControlPanel = ({
 
         {(exportFormat === 'jpeg' || exportFormat === 'webp') && (
           <div className="space-y-2">
-            <Label className="text-foreground">Qualidade: {Math.round(quality * 100)}%</Label>
+            <Label id="quality-label" className="text-foreground">
+              Qualidade: {Math.round(quality * 100)}%
+            </Label>
             <Slider
+              aria-labelledby="quality-label"
               value={[quality]}
               onValueChange={([val]) => setQuality(val)}
               min={0.1}
@@ -237,19 +304,25 @@ const ControlPanel = ({
       </div>
 
       <Button
-        className="w-full gap-2 bg-secondary hover:bg-primary/10 text-foreground border border-primary"
+        className="w-full gap-2 bg-gold hover:bg-gold/90 text-gold-foreground border border-gold"
         size="lg"
         onClick={handleSplit}
-        disabled={isProcessing || !image}
+        disabled={isProcessing || !image || !!validationError}
         data-testid="split-button"
       >
         <Scissors className="w-5 h-5" />
         {isProcessing ? 'Processando...' : 'Dividir Imagem'}
       </Button>
 
+      {validationError && (
+        <p role="alert" className="text-sm text-red-400">
+          {validationError}
+        </p>
+      )}
+
       <div className="text-xs text-muted-foreground text-center space-y-1">
         <p>Linhas de corte: {cutLines.length}</p>
-        <p className="text-cyan-400">Processamento 100% local</p>
+        <p className="text-gold">Processamento 100% local</p>
       </div>
     </div>
   );

@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { calculateCutLines } from '@/utils/imageSplitter';
 
-const CanvasPreview = ({ image, imageData, splitMode, splitParams, onCutLinesUpdate }) => {
+const CanvasPreview = ({ image, imageData, splitMode, splitParams }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState(null);
 
-  // Calcular dimensões apenas quando a imagem muda
+  // Measure only the drawing area, keeping image details outside the canvas.
   useEffect(() => {
     if (!image || !containerRef.current) return;
 
@@ -24,7 +24,7 @@ const CanvasPreview = ({ image, imageData, splitMode, splitParams, onCutLinesUpd
       setDimensions({
         scale,
         displayWidth: image.width * scale,
-        displayHeight: image.height * scale
+        displayHeight: image.height * scale,
       });
     };
 
@@ -46,6 +46,7 @@ const CanvasPreview = ({ image, imageData, splitMode, splitParams, onCutLinesUpd
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const { scale, displayWidth, displayHeight } = dimensions;
 
     canvas.width = displayWidth;
@@ -54,19 +55,24 @@ const CanvasPreview = ({ image, imageData, splitMode, splitParams, onCutLinesUpd
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(image, 0, 0, displayWidth, displayHeight);
 
-    const lines = calculateCutLines(
-      image.width,
-      image.height,
-      splitMode,
-      splitParams[splitMode]
-    );
-    onCutLinesUpdate(lines);
+    let lines = [];
+    try {
+      lines = calculateCutLines(
+        image.width,
+        image.height,
+        splitMode,
+        splitParams[splitMode]
+      );
+    } catch {
+      // Invalid configurations are explained next to the split button.
+    }
 
-    ctx.strokeStyle = '#06b6d4';
+    const gold = getComputedStyle(canvas).getPropertyValue('--gold').trim();
+    ctx.strokeStyle = gold ? `hsl(${gold})` : '#d4af37';
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
 
-    lines.forEach(line => {
+    lines.forEach((line) => {
       ctx.beginPath();
       if (line.type === 'vertical') {
         const x = line.position * scale;
@@ -79,31 +85,35 @@ const CanvasPreview = ({ image, imageData, splitMode, splitParams, onCutLinesUpd
       }
       ctx.stroke();
     });
-  }, [image, dimensions, splitMode, splitParams, onCutLinesUpdate]);
+  }, [image, dimensions, splitMode, splitParams]);
 
   return (
     <div
-      ref={containerRef}
-      className="canvas-container w-full h-full min-h-[220px] lg:min-h-0 flex items-center justify-center p-4"
+      className="w-full h-full min-h-0 flex flex-col"
       data-testid="canvas-preview"
     >
-      {image && (
-        <div className="relative">
+      <div
+        ref={containerRef}
+        className="canvas-container w-full h-[220px] sm:h-[300px] shrink-0 lg:h-auto lg:flex-1 lg:shrink min-h-0 flex items-center justify-center overflow-hidden p-4"
+      >
+        {image && (
           <canvas
             ref={canvasRef}
+            role="img"
+            aria-label="Prévia da imagem com as linhas de corte"
             className="max-w-full max-h-full rounded-lg shadow-2xl"
           />
-          {imageData && (
-            <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm px-3 py-2 rounded-lg text-xs font-mono space-y-1">
-              <div className="text-cyan-400">
-                {imageData.width} × {imageData.height}px
-              </div>
-              {imageData.size > 0 && (
-                <div className="text-muted-foreground">
-                  {(imageData.size / 1024 / 1024).toFixed(2)} MB
-                </div>
-              )}
-            </div>
+        )}
+      </div>
+      {image && imageData && (
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border bg-card px-4 py-2 text-xs font-mono">
+          <span className="text-gold">
+            {imageData.width} × {imageData.height}px
+          </span>
+          {imageData.size > 0 && (
+            <span className="text-muted-foreground">
+              {(imageData.size / 1024 / 1024).toFixed(2)} MB
+            </span>
           )}
         </div>
       )}

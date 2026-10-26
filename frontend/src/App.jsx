@@ -7,13 +7,6 @@ import CanvasPreview from '@/components/CanvasPreview';
 import ControlPanel from '@/components/ControlPanel';
 import ResultsGallery from '@/components/ResultsGallery';
 
-const SUPPORTED_EXPORT_TYPES = {
-  'image/jpeg': 'jpg',
-  'image/jpg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp'
-};
-
 function App() {
   const [image, setImage] = useState(null);
   const [imageData, setImageData] = useState(null);
@@ -21,12 +14,11 @@ function App() {
   const [splitParams, setSplitParams] = useState({
     vertical: { count: 2, mode: 'count' },
     horizontal: { count: 2, mode: 'count' },
-    grid: { rows: 2, cols: 2 }
+    grid: { rows: 2, cols: 2 },
   });
   const [exportFormat, setExportFormat] = useState('png');
   const [quality, setQuality] = useState(0.9);
   const [splitParts, setSplitParts] = useState([]);
-  const [cutLines, setCutLines] = useState([]);
 
   const revokePartUrls = useCallback((parts) => {
     parts.forEach((part) => {
@@ -42,14 +34,6 @@ function App() {
     };
   }, [splitParts, revokePartUrls]);
 
-  // Helper para obter extensão do formato
-  const getFileExtension = () => {
-    if (exportFormat === 'original' && imageData?.type) {
-      return SUPPORTED_EXPORT_TYPES[imageData.type] || 'png';
-    }
-    return exportFormat === 'jpeg' ? 'jpg' : exportFormat;
-  };
-
   const handleImageLoad = (img, data) => {
     setImage(img);
     setImageData(data);
@@ -60,7 +44,6 @@ function App() {
     setImage(null);
     setImageData(null);
     setSplitParts([]);
-    setCutLines([]);
   };
 
   const handleSplitComplete = (parts) => {
@@ -70,7 +53,7 @@ function App() {
   return (
     <div className="App min-h-screen bg-background text-foreground">
       <Header onReset={handleReset} hasImage={!!image} />
-      
+
       <main className="container mx-auto p-6">
         {!image ? (
           <ImageUploader onImageLoad={handleImageLoad} />
@@ -82,11 +65,10 @@ function App() {
                 imageData={imageData}
                 splitMode={splitMode}
                 splitParams={splitParams}
-                onCutLinesUpdate={setCutLines}
               />
             </div>
-            
-            <div className="lg:col-span-4 xl:col-span-3 bg-card rounded-xl border border-border flex flex-col overflow-y-auto">
+
+            <div className="lg:col-span-4 xl:col-span-3 lg:self-start lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] bg-card rounded-lg border border-border flex flex-col overflow-y-auto custom-scrollbar">
               <ControlPanel
                 splitMode={splitMode}
                 setSplitMode={setSplitMode}
@@ -98,7 +80,6 @@ function App() {
                 setQuality={setQuality}
                 image={image}
                 imageData={imageData}
-                cutLines={cutLines}
                 onSplitComplete={handleSplitComplete}
               />
             </div>
@@ -108,8 +89,6 @@ function App() {
         {splitParts.length > 0 && (
           <ResultsGallery
             parts={splitParts}
-            exportFormat={exportFormat}
-            fileExtension={getFileExtension()}
             onClear={() => setSplitParts([])}
           />
         )}
@@ -118,15 +97,15 @@ function App() {
       <footer className="container mx-auto px-6 pb-6 pt-2 text-center text-xs text-muted-foreground">
         Desenvolvido por{' '}
         <a
-          href="https://www.instagram.com/lucaas_a/"
+          href="https://github.com/xLuuks"
           target="_blank"
           rel="noreferrer"
-          className="text-primary hover:underline"
+          className="text-gold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
         >
-          Lucas Alves
+          Luks Alves
         </a>
       </footer>
-      
+
       <Toaster position="bottom-right" theme="dark" />
     </div>
   );
